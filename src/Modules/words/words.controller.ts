@@ -12,7 +12,7 @@ export class WordsController {
   @Post("gif")
   async generateGif(@Body() q: any) {
     ////
-    const { url, height, width, serires } = q;
+    const { url } = q;
     const current_url = new URL(url);
     const search_params = current_url.searchParams;
     const sid = search_params.get("sid");
@@ -21,7 +21,7 @@ export class WordsController {
 
     const { data } = await axios.get(url);
     await (data.series).forEach(async (entry, index) => {
-      if (index == (serires ?? 0)) {
+      if(index==1) {
         const folder = "series" + index;
         const urls = [];
         await (entry.images).forEach(async (image, index) => {
@@ -56,15 +56,19 @@ export class WordsController {
                     await tar.list({
                       file: destinationPath,
                       onentry: async (entry) => {
-                        await urls.push("./"+folder+"/"+entry.path);
+                        await urls.push("./" + folder + "/" + entry.path);
                       }
                     }).then(async () => {
                       // console.log(urls);
-                      console.log(url);
-                      console.log('dd');
+
+                      // sizes
+                      const img = await loadImage(urls[0]);
+
+
+                      //
                       const gifStream = createWriteStream(folder + ".gif");
-                      const encoder = new GIFEncoder(width ?? 512, height ?? 512);
-                      const canvas = createCanvas(width ?? 512, height ?? 512);
+                      const encoder = new GIFEncoder(img.naturalWidth ?? 512, img.naturalHeight ?? 512);
+                      const canvas = createCanvas(img.naturalWidth ?? 512, img.naturalHeight ?? 512);
                       const ctx = canvas.getContext("2d");
 
                       encoder.createReadStream().pipe(gifStream);
@@ -74,7 +78,7 @@ export class WordsController {
 
                       for (const url of urls) {
                         const img = await loadImage(url);
-                        ctx.drawImage(img, 0, 0, width ?? 512, height ?? 512);
+                        ctx.drawImage(img, 0, 0, img.naturalWidth ?? 512, img.naturalHeight ?? 512);
                         encoder.addFrame(ctx);
                       }
                       encoder.finish();
@@ -98,9 +102,12 @@ export class WordsController {
           } else {
             const urlImage = `https://storelpa02.dicomgrid.com/api/v3/storage/study/${data.namespace}/${data.study_uid}/image/${image.id}/version/${image.version}/frame/0/diagnostic?sid=${sid}&phi_namespace=${phi_namespace}&depth=8&viewer=${viewer}`;
             await urls.push(urlImage);
+            //
+            const img = await loadImage(urls[0]);
+
             const gifStream = createWriteStream(folder + ".gif");
-            const encoder = new GIFEncoder(width ?? 512, height ?? 512);
-            const canvas = createCanvas(width ?? 512, height ?? 512);
+            const encoder = new GIFEncoder(img.naturalWidth ?? 512, img.naturalHeight ?? 512);
+            const canvas = createCanvas(img.naturalWidth ?? 512, img.naturalHeight ?? 512);
             const ctx = canvas.getContext("2d");
 
             encoder.createReadStream().pipe(gifStream);
@@ -112,15 +119,16 @@ export class WordsController {
               const response = await fetch(url);
               const imageBuffer = await response.buffer();
               const img = await loadImage(imageBuffer);
-              ctx.drawImage(img, 0, 0, width ?? 512, height ?? 512);
+
+              ctx.drawImage(img, 0, 0, img.naturalWidth ?? 512, img.naturalHeight ?? 512);
               encoder.addFrame(ctx);
             }
             encoder.finish();
           }
         });
         /////////
-
       }
+
     });
     return { message: "GIF generated successfully" };
 
