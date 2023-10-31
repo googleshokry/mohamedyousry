@@ -21,7 +21,6 @@ export class WordsController {
 
     const { data } = await axios.get(url);
     await (data.series).forEach(async (entry, index) => {
-      if(index==1) {
         const folder = "series" + index;
         const urls = [];
         await (entry.images).forEach(async (image, index) => {
@@ -127,7 +126,6 @@ export class WordsController {
           }
         });
         /////////
-      }
 
     });
     return { message: "GIF generated successfully" };
